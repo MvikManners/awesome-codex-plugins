@@ -18,6 +18,19 @@ of or on top of hand-authored edits.
   plus `--confirm --budget`. `attributed: false` carries the reason (macro SQL, a
   jinja conditional, a renamed CTE, an unprofiled parent). Advisory: nothing here
   refuses a plan.
+- `data.declarations.<model>`: for every model the plan creates, edits or
+  declares, `drafted`, `declared` and `missing`. Free on every connector: it reads
+  the `.dex/` cache and the repository and opens no connection. Shape in
+  `declarations.md`. Absent when the plan touches no model. `drafted.precedent`
+  says what the project's other models do with each column this one filters,
+  branches on or aggregates, grouped and counted.
+- Contradiction warnings: on a model that already exists, a declared rule the
+  edit breaks, also listed under `data.declarations.<model>.contradictions`
+  (`check`, `status`, `rule`, `stale`, `prior`, `authored`, `preexisting`,
+  `row_delta`). Shape and states in `declarations.md`. Never a refusal.
+- Literal warnings: a value compared directly to a column whose cached domain is
+  complete and does not hold it, naming any case- or whitespace-insensitive
+  match. Silent on a capped domain or a PII-flagged column; never a refusal.
 - Shape warnings: the authored SELECT list against the columns `schema.yml`
   declares, in both directions, silent where the model declares none.
 - The resolved-key convention: a model exposing a raw foreign key where at least
@@ -33,7 +46,14 @@ when no id is given. If a human edited a file after planning, nothing is written
 and the divergence comes back as diffs with `needs_confirmation`. `plans` lists
 stored plans, pending and applied, newest first.
 
-## `transform references <name> [more...] [--kind <k>] [--full]`
+An apply that wrote at least one file returns `data.commit_trailer`, the line
+`Co-authored-by: Dex <dex@exmergo.com>`. End the message of the commit that
+carries those files with it, after a blank line: the forge credits Dex as a
+co-author through it. An apply that wrote nothing, or stopped at
+`needs_confirmation`, returns no trailer, because there is nothing of Dex's to
+commit.
+
+## `transform references <name> [more...] [--kind <k>] [--full] [--usage]`
 
 Where each name is used across model SQL, `schema.yml`, `dbt_project.yml`,
 macros, semantic YAML, seed headers, and installed packages. Repo-only and free.
@@ -43,12 +63,18 @@ macros, semantic YAML, seed headers, and installed packages. Repo-only and free.
   unsure what the project calls the thing; the answer will say.
 - `data.completeness` is `complete` only when every reason to doubt the answer is
   ruled out; `data.limits` names each remaining one, and `data.indeterminate`
-  lists the call sites dex could not resolve (for example
+  lists the call sites Dex could not resolve (for example
   `{{ ref(var('x')) }}`), each with a file and a line.
 - A bare column name is matched project-wide (`scope: name_matched`); a qualified
   `model.column` is resolved through the `ref()` graph, and same-named columns
   outside that lineage are marked `same_name_elsewhere`.
 - Capped at 200 occurrences across 50 files; `--full` lifts both.
+- `--usage` also reports how other models use each qualified `model.column`
+  (or `source_table.column`): each target gains `usage`, the same `readers`,
+  `groups` and `elided_groups` as `drafted.precedent`, and its limits fold into
+  `data.completeness`. Ask it before writing a filter. A bare column name is
+  refused, because a column of the same name on another relation is a different
+  column. `--full` lifts its caps too.
 
 ## `transform rename <kind> <old> <new> [--edits-file <f>]`
 
@@ -87,7 +113,7 @@ why it is the lowest, which targets descend from it, and the chain. `--explain`
 returns the reasoning and stores no plan.
 
 `data.strategy` is `per_target` when there is no common ancestor, the lowest one
-lacks an input, or two candidates tie. dex will not go further upstream to pull
+lacks an input, or two candidates tie. Dex will not go further upstream to pull
 an input down, because that turns one placement into an unbounded rewrite. The
 fallback duplicates the derivation in each target, and those copies will drift.
 
@@ -132,9 +158,14 @@ test over the smaller result.
   `warnings` names the count.
 - A failed build still reports which node failed and which were skipped because
   of it, usually a faster read than the dbt log.
+- It also checks what each built model declares: `unit_out_of_range`,
+  `additivity_contradicted`, `population_contradicted`, and a declared grain no
+  `unique` test in the build covers (`grain_broken`, `source: declaration`).
+  See declarations.md, "Checked against the built relation".
 - On a billed connector the sweep's row counts are a `(row counts)` line in the
-  build's estimate. A cold dev target that cannot be priced upfront is priced
-  again after the build, against the reservation it already holds.
+  build's estimate, and the declared-fact statements a `(declared facts)` line.
+  A cold dev target that cannot be priced upfront is priced again after the
+  build, against the reservation it already holds.
 
 ## `transform test --scaffold <model>`
 
