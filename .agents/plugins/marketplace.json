@@ -31,7 +31,7 @@
         "authentication": "ON_INSTALL"
       },
       "category": "Security & Defense",
-      "description": "Deterministic Layer 0 AST execution containment & sandbox defense for autonomous MCP agents. Neutralizes shell breakouts, eval loops, and network egress out-of-band in <0.01ms.",
+      "description": "Deterministic AST-level static policy enforcement for autonomous AI agent tool calls. Inspects call trees for prohibited modules (subprocess, socket, shutil), dangerous built-ins (eval, exec), credential paths, and base64 evasion patterns. Benchmarked at 0.0776 ms median P50 concurrency latency via tests/test_enterprise_engine.py and 0.0389 ms single-dispatch P50 via tests/test_breakout_gauntlet.py.",
       "homepage": "https://p20.laveto.net/wisdom/",
       "repository": "https://github.com/MvikManners/aw1-circuit-breaker"
     },
